@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="{{ request.locale_name }}">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ImageComparer</title>
+        <style>
+            body {
+                font-family: Arial;
+                margin: 0;
+                color: white;
+                background-color: rgb(40, 27, 54);
+            }
+            header {
+                margin: 0;
+                padding: 5px 20px;
+                background: rgb(16, 11, 22);
+                background: linear-gradient(
+                    16deg,
+                    rgb(43, 28, 61) 0%,
+                    rgb(84, 0, 173) 100%
+                );
+                border-bottom-right-radius: 45px;
+            }
+            main {
+                padding: 20px;
+            }
+        </style>
+        {% block style %} {% endblock style %}
+    </head>
+    <body>
+        <header>
+            <h1>ImageComparer</h1>
+        </header>
+        <main>
+            {% block content %}
+            <p>No content</p>
+            {% endblock content %}
+        </main>
+    </body>
+    {% block script %} {% endblock script %}
+</html>

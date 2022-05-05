@@ -1,60 +1,107 @@
-{% extends "mainframe.jinja2" %} {% block content %}
+{% extends "mainframe.html" %} {% block content %}
 <div
     style="
-        overflow-y: scroll;
+        overflow-y: auto;
         position: fixed;
-        width: 100%;
-        height: 100%;
+        top: 0px;
+        left: 0px;
+        bottom: 0px;
+        right: 0px;
         display: none;
         background-color: rgba(0, 0, 0, 0.808);
+        z-index: 10;
     "
     onclick="delarge()"
 >
     <img
         id="big-image"
-        style="max-height: 100%; height: 100%"
+        style="
+            max-height: 99%;
+            max-width: 99%;
+            margin-left: auto;
+            margin-right: auto;
+        "
         src=""
         alt=""
         onclick="delarge()"
     />
-    <button onclick="delete_image()" style="height: 100%">Delete</button>
 </div>
 {% for group in groups %}
 <div class="image-group">
     {% for image in group.images %}
-    <img
-        class="image-view"
-        src="{{ url_for('images', path='/' + image.url) }}"
-        alt=""
-        loading="lazy"
-        onclick="enlarge(this)"
-    />
+    <div class="image-view">
+        <code style="overflow: word-wrap"
+            >{{image.dimensions}} | {{image.size}}</code
+        >
+        <br />
+        <img
+            src="{{ url_for('images', path='/' + image.url) }}"
+            alt=""
+            loading="lazy"
+            onclick="handleClick(this)"
+            path="{{image.path}}"
+            class="{{ 'delete' if image.deleted else '' }}"
+        />
+        <br />
+        <code style="overflow: word-wrap">{{image.unique_path}}</code>
+    </div>
     {% endfor %}
 </div>
+<p style="margin-top: 0"><code>{{group.path_prefix}}</code></p>
 <hr />
 {% endfor %} {% endblock content %} {% block style %}
 <style>
     body {
-        background-color: rgb(53, 35, 75);
         max-width: 100%;
+    }
+
+    hr {
+        margin: 2rem 1rem;
+        border: 5px solid black;
     }
 
     input {
         width: 50%;
     }
 
-    .image-view {
-        height: 300px;
-        width: auto;
+    img.delete {
+        opacity: 20%;
+        border: solid red -5px;
     }
 
-    .image-container {
+    .image-view > img {
+        width: auto;
+        height: auto;
+        max-width: 500px;
+        max-height: 400px;
+    }
+    .image-view {
+        width: auto;
+        height: auto;
+        max-width: 500px;
+        margin-right: 0.3rem;
+    }
+
+    .image-group {
         display: flex;
         flex-wrap: wrap;
     }
 </style>
 {% endblock style %} {% block script %}
 <script>
+    let control = false;
+
+    document.onkeydown = (k) => {
+        if (k.keyCode == 17) {
+            control = true;
+        }
+    };
+    document.onkeyup = (k) => {
+        if (k.keyCode == 17) {
+            control = false;
+        }
+    };
+
     function enlarge(image) {
         var bigImg = document.getElementById("big-image");
         bigImg.setAttribute("src", image.getAttribute("src"));
@@ -64,30 +111,37 @@
         var bigImg = document.getElementById("big-image");
         bigImg.parentNode.style.display = "None";
     }
-    function delete_image() {
-        var bigImg = document.getElementById("big-image");
-        var src = bigImg.getAttribute("src");
-        var search = src.split("/")[src.split("/").length - 1].split("\\")[
-            src.split("\\").length - 1
-        ];
-        console.log(search);
-        $.ajax({
-            url: "viewing",
-            type: "delete",
-            dataType: "json",
-            data: {
-                src: src,
+
+    function handleClick(image) {
+        if (control) {
+            enlarge(image);
+            return;
+        }
+
+        // Toggle delete state
+        let deleteImage = undefined;
+        if (image.className != "delete") {
+            image.className = "delete";
+            deleteImage = true;
+        } else {
+            image.className = "";
+            deleteImage = false;
+        }
+
+        fetch("/compare", {
+            method: "POST",
+            mode: "cors", // no-cors, *cors, same-origin
+            cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+            credentials: "same-origin", // include, *same-origin, omit
+            headers: {
+                "Content-Type": "application/json",
+                // 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            success: (x) => {
-                $("[class='image-view'][src$='" + search + "']")
-                    .get(0)
-                    .parentNode.remove();
-            },
-            error: (x) => {
-                $("[class='image-view'][src$='" + search + "']")
-                    .get(0)
-                    .parentNode.remove();
-            },
+            redirect: "follow", // manual, *follow, error
+            body: JSON.stringify({
+                path: image.attributes.getNamedItem("path").nodeValue,
+                delete: deleteImage,
+            }), // body data type must match "Content-Type" header
         });
     }
 </script>
