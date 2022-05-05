@@ -53,7 +53,7 @@ async def setup_post(body: SetupBody):
                         for group_lines in results.split("\n\n")[1:]]
         # Filter empty groups
         image_groups = [
-            group for group in image_groups if len(group.images) > 1]
+            group for group in image_groups if len(group.images) > 0]
 
         # Load last state from delete_images file
         deleted_paths = set()
