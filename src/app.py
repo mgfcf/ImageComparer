@@ -1,15 +1,13 @@
-from dataclasses import dataclass
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import sqlite3
-import os
-import ntpath
+from pydantic import BaseModel
+
+from images import ImageGroup
 
 # CONFIG
-IMAGE_MOUNT_PATH = """O:\OneDrive"""
-
+IMAGE_MOUNT_PATH = """O:\onedrive"""
 
 
 app = FastAPI()
@@ -18,60 +16,42 @@ app.mount("/images", StaticFiles(directory=IMAGE_MOUNT_PATH), name="images")
 templates = Jinja2Templates(directory="templates")
 
 
-@app.get("/viewing", response_class=HTMLResponse)
-async def viewing(request: Request):
-    results = "Go"
-    return templates.TemplateResponse("viewing.html", {"request": request, "results": results})
+image_groups: list[ImageGroup] = []
 
 
-@app.delete("/viewing", response_class=HTMLResponse)
-async def viewing_post(request: Request):
+class SetupBody (BaseModel):
+    config: str
+
+
+@app.get("/")
+async def index(request: Request):
+    if image_groups is not None and len(image_groups) > 0:
+        return templates.TemplateResponse("compare.html", {"groups": image_groups, "request": request})
+    else:
+        return templates.TemplateResponse("setup.html", context={"request": request})
+
+
+@app.post("/setup")
+async def setup_post(body: SetupBody):
+    try:
+        # Parse results
+        results: str = body.config
+        if results is None or len(results) <= 0:
+            return "No config given."
+
+        global image_groups
+        image_groups = [ImageGroup(group_lines)
+                        for group_lines in results.split("\n\n")[1:]]
+
+        for group in image_groups:
+            for image in group.images:
+                image.url = image.path[len(IMAGE_MOUNT_PATH):]
+    except Exception as ex:
+        return "Something went wrong. " + str(ex)
+
+
+@app.delete("/compare", response_class=HTMLResponse)
+async def compare_post(request: Request):
     data = await request.form()
     src = data["src"].split("/")[-1]
-    delete_image(src)
-    return ""
-
-
-def path_leaf(path):
-    head, tail = ntpath.split(path)
-    return tail or ntpath.basename(head)
-
-def delete_image(l_path):
-    os.rename(os.path.join(IMAGE_MOUNT_PATH, l_path),os.path.join("""W:\GoogleDrive\Pics\Anime\Deleted""", path_leaf(l_path)))
-
-@app.post("/viewing", response_class=HTMLResponse)
-async def viewing_post(request: Request, where: str = Form(...)):
-    sql = where
-    if (sql == ""):
-        return viewing()
-    print(sql)
-    conn = sqlite3.connect(db_path, uri=True)
-    cur = conn.cursor()
-
-    cur.execute("SELECT FileName, Id FROM AllTaggedConcat WHERE " + sql)
-    res = cur.fetchall()
-    images = []
-    cur.execute("SELECT count(*) FROM AllTaggedConcat WHERE " +
-                sql.split("limit")[0])
-    cnt = cur.fetchall()[0][0]
-
-    dirs = [x for x in os.listdir(IMAGE_MOUNT_PATH) if not x.endswith(".ini")]
-    refimages = []
-    for i in dirs:
-        subdir = os.path.join(IMAGE_MOUNT_PATH, i)
-        refimages.extend([{"path": i, "file": img}
-                          for img in os.listdir(subdir)])
-
-    for i in res:
-        image = {}
-        possible = [os.path.join(img["path"], img["file"])
-                    for img in refimages if img["file"] == i[0]]
-        if (len(possible) > 0):
-            image["file"] = possible[0]
-            image["id"] = i[1]
-            images.append(image)
-        else:
-            pass
-    results = "Results " + str(cnt)
-    print(results)
-    return templates.TemplateResponse("viewing.html", {"request": request, "images": images, "searchterm": sql, "results": results})
+    return "Not implemented yet :c"

@@ -1,0 +1,36 @@
+{% extends "mainframe.jinja2" %} {% block content %}
+<h2>Please paste content of results file into here:</h2>
+<textarea id="config"></textarea>
+<br />
+<br />
+<button id="submit">Load config</button>
+{% endblock content %} {% block style %}
+<style>
+    textarea {
+        margin: auto;
+        width: 80%;
+        height: 10rem;
+        max-width: 100%;
+    }
+</style>
+{% endblock style %} {% block script %}
+<script>
+    function sendData(e) {
+        const config = document.getElementById("config").value;
+        fetch("/setup", {
+            method: "POST",
+            mode: "cors", // no-cors, *cors, same-origin
+            cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+            credentials: "same-origin", // include, *same-origin, omit
+            headers: {
+                "Content-Type": "application/json",
+                // 'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            redirect: "follow", // manual, *follow, error
+            body: JSON.stringify({ config: config }), // body data type must match "Content-Type" header
+        });
+        window.location.reload();
+    }
+    document.getElementById("submit").onclick = sendData;
+</script>
+{% endblock script %}

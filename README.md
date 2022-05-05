@@ -1,3 +1,3 @@
 # ImageComparer
 
-python -m uvicorn start:app --reload
+To run: `python -m uvicorn app:app --reload`
