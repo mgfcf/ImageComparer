@@ -1,3 +1,4 @@
+from concurrent.futures.process import _ExceptionWithTraceback
 import os
 from typing import Set
 from fastapi import FastAPI, Request
@@ -56,16 +57,20 @@ async def setup_post(body: SetupBody):
             group for group in image_groups if len(group.images) > 0]
 
         # Load last state from delete_images file
-        deleted_paths = set()
+        global deleted_images
         if os.path.exists(DELETE_LOG_PATH):
-            with open(DELETE_LOG_PATH, "r") as f:
-                deleted_paths = set(l.strip() for l in f.readlines())
+            try:
+                with open(DELETE_LOG_PATH, "r") as f:
+                    deleted_images = deleted_images.union(
+                        set(l.strip() for l in f.readlines()))
+            except Exception as ex:
+                print("Could not load previous delete file.", ex)
 
         # Apply last state and create proper url
         for group in image_groups:
             for image in group.images:
                 image.url = image.path[len(IMAGE_MOUNT_PATH):]
-                image.deleted = image.path in deleted_paths
+                image.deleted = image.path in deleted_images
 
         # Sort by path
         image_groups = sorted(image_groups, key=lambda g: g.images[0].path)
