@@ -31,15 +31,17 @@ class Image:
         self.parse(raw_line)
 
     def parse(self, line: str) -> None:
-        parts = line.split(" - ")
+        SPLITTER = " - "
+        parts = line.split(SPLITTER)
 
         if len(parts) < 4:
             return
 
-        self.path = parts[0]
+        # Only the last 4 elements are interesting, concatinate the beginning again
+        self.path = SPLITTER.join(parts[:-3])
         self.unique_path = self.path
         self.url = None
-        self.dimensions = parts[1]
-        self.size = parts[2]
-        self.similarity = parts[3]
+        self.dimensions = parts[-3]
+        self.size = parts[-2]
+        self.similarity = parts[-1]
         self.deleted = False
